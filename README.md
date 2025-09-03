@@ -3,7 +3,7 @@ License
 This script and related content is licensed under the MIT license.
 ~~~
 Copyright 2014 Matthijs Kooijman <matthijs@stdin.nl>
-Copyright 2024 Stephan Enderlein (modified and fixed)
+Copyright 2024-2025 Stephan Enderlein (modified/improved/extended and fixed)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,8 @@ Project is originally cloned from https://github.com/Pinoccio/tool-serial-pcap
 - Keep the serial port always open instead of opening/closing on each cycle (avoids losing data)
 - Add Modbus RTU packet parser
 - Output packets on the command line (while forwarding to Wireshark via the pipe /tmp/wireshark)
+
+ Note: Code was reworked with assistance from copilot AI and may not work in all situations.
 
 # Installation and Start
 There are two ways: directly in your system or indirectly in a venv via serial-pcap.sh
