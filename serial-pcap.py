@@ -232,9 +232,9 @@ def main():
         print("Opened {} at {}".format(options.port, options.baudrate))
         
         if options.wireshark:
-            start_wireshark(options.fifo)  
             if not options.fifo:
                 options.fifo = WIRESHARK_FIFO
+            start_wireshark(options.fifo)  
         
         out = setup_output(options)
 
