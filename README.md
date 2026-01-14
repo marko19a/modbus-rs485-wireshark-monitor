@@ -53,6 +53,9 @@ pip install pyserial
 
 # Start script
 /serial-pcap.py -b 19200 --fifo /tmp/wireshark /dev/ttyUSB0
+
+# Alternative start script with wireshark in one call 
+/serial-pcap.py -ws /dev/ttyUSB0
 ~~~
 
 **Indirectly via venv**

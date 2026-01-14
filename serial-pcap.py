@@ -28,6 +28,7 @@
 # in pcap format.
 
 import os
+import subprocess
 import sys
 import time
 import errno
@@ -38,11 +39,26 @@ import binascii
 import datetime
 import argparse
 
-version = "2.0"
+version = "2.1"
 # This script reads packets from a serial port and writes them to a pcap file or fifo.
 # It can be used to capture packets from devices that communicate over serial, such as
 # 802.15.4 devices, modbus devices, etc.
 # The script can also print the packets in a human-readable format to stdout.
+
+WIRESHARK_FIFO = "/tmp/wireshark"
+
+def start_wireshark(file_path):
+    try:
+        subprocess.Popen(
+            ["wireshark", "-k", "-i", file_path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print(f"Started Wireshark on fifo {file_path}")
+    except FileNotFoundError:
+        print("Error: wireshark not found in PATH")
+    except Exception as e:
+        print(f"Failed to start Wireshark: {e}")
 
 class Formatter:
     def __init__(self, out):
@@ -100,7 +116,7 @@ class HumanFormatter(Formatter):
 
 def open_fifo(options, name):
     try:
-        os.mkfifo(name);
+        os.mkfifo(name)
     except FileExistsError:
         pass
     except:
@@ -130,8 +146,44 @@ def main():
                         help='The serial port to read from')
     parser.add_argument('-b', '--baudrate', default=19200, type=int,
                         help='The baudrate to use for the serial port (defaults to %(default)s)')
+
+    parser.add_argument(
+        '--bytesize',
+        choices=[5, 6, 7, 8],
+        default=8,
+        type=int,
+        help='Data bits (default: %(default)s)'
+    )
+
+    parser.add_argument(
+        '--parity',
+        choices=['N', 'E', 'O', 'M', 'S'],
+        default='E',
+        help='Parity: N,E,O,M,S (default: %(default)s)'
+    )
+
+    parser.add_argument(
+        '--stopbits',
+        choices=[1, 1.5, 2],
+        default=1,
+        type=float,
+        help='Stop bits (default: %(default)s)'
+    )
+
+    parser.add_argument(
+        '-t', '--timeout',
+        default=0.01,
+        type=float,
+        help='Read timeout in seconds (default: %(default)s)'
+    )
+
     parser.add_argument('-q', '--quiet', action='store_true',
                         help='Do not output any informational messages')
+    parser.add_argument(
+        '-ws', '--wireshark',
+        action='store_true',
+        help='Auto-start Wireshark using argument from --fifo or default "/tmp/wireshark"'
+    )
     output = parser.add_mutually_exclusive_group()
     output.add_argument('-F', '--fifo',
                         help='Write output to a fifo instead of stdout. The fifo is created if needed and capturing does not start until the other side of the fifo is opened.')
@@ -148,7 +200,8 @@ def main():
 
         timeout=0.01
         try:
-          ser = serial.Serial(options.port, options.baudrate, serial.EIGHTBITS, serial.PARITY_EVEN,serial.STOPBITS_ONE, timeout)
+            ser = serial.Serial(options.port, options.baudrate, options.bytesize,
+                                options.parity, options.stopbits, options.timeout)
         except serial.SerialException as e:
             print(f"Error opening serial port {options.port}: {e}")
             sys.exit(1)
@@ -177,6 +230,12 @@ def main():
         # Debug: zeige aktuelle serielle Einstellungen
         print(f"Serial settings: baud={ser.baudrate} bytesize={ser.bytesize} parity={ser.parity} stopbits={ser.stopbits}")
         print("Opened {} at {}".format(options.port, options.baudrate))
+        
+        if options.wireshark:
+            start_wireshark(options.fifo)  
+            if not options.fifo:
+                options.fifo = WIRESHARK_FIFO
+        
         out = setup_output(options)
 
         print("Write pcap header to pipe")
